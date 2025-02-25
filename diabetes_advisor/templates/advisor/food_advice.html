@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diabetes Food Advisor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8 text-blue-600">Diabetes Food Advisor</h1>
+        
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 mb-8">
+            <form id="foodForm" class="space-y-6" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Food Names (comma-separated)
+                    </label>
+                    {{ form.food_name }}
+                </div>
+                
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Or Upload Food Image
+                    </label>
+                    {{ form.food_image }}
+                    <p class="mt-1 text-sm text-gray-500">
+                        Upload a clear image of your food for AI recognition
+                    </p>
+                </div>
+                
+
+                <div> <!--just for namesake it is used, it doesn't have any function-->
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Current Insulin Level
+                    </label>
+                    {{ form.insulin_level }}
+                </div>
+      
+                <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200">
+                    Analyze Food
+                </button>
+            </form>
+        </div>
+        
+
+        <div id="loading" class="hidden max-w-2xl mx-auto text-center mb-8">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p class="mt-4 text-gray-600">Analyzing your food...</p>
+        </div>
+        
+        <!-- Results Section -->
+        <div id="results" class="hidden max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-xl font-semibold mb-4">Analysis Results</h2>
+            
+            <!-- Input -->
+            <div class="mb-4">
+                <span class="text-sm font-medium text-gray-500">Input Source:</span>
+                <span id="inputSource" class="ml-2"></span>
+            </div>
+            
+            <!--Items -->
+            <div class="mb-4">
+                <h3 class="text-lg font-medium mb-2">Analyzed Foods:</h3>
+                <div id="foodList" class="space-y-2"></div>
+            </div>
+            
+            <!-- Total Sugar contents in the food in grams -->
+            <div class="mb-4">
+                <span class="text-sm font-medium text-gray-500">Total Sugar Content:</span>
+                <span id="totalSugar" class="ml-2"></span>
+                <span>grams</span>
+            </div>
+            
+            <!-- mentions the insulin level -->
+            <div class="mb-4">
+                <span class="text-sm font-medium text-gray-500">Insulin Level:</span>
+                <span id="insulinLevel" class="ml-2"></span>
+            </div>
+            
+            <!-- gives advice on the basic calculation of sugar level -->
+            <div id="advice" class="p-4 rounded-lg mt-4"></div>
+        </div>
+        
+        <!-- Error Message -->
+        <div id="error" class="hidden max-w-2xl mx-auto bg-red-100 text-red-700 p-4 rounded-lg mt-4"></div>
+    </div>
+    
+    <script>
+        $(document).ready(function() {
+            $('#foodForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                // Show loading indicator
+                $('#loading').removeClass('hidden');
+                $('#results').addClass('hidden');
+                $('#error').addClass('hidden');
+                
+                // Create FormData object
+                var formData = new FormData(this);
+                
+                // Send AJAX request
+                $.ajax({
+                    url: '{% url "analyze_food" %}',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        $('#loading').addClass('hidden');
+                        
+                        if (response.error) {
+                            $('#error').removeClass('hidden').text(response.error);
+                            return;
+                        }
+                        
+                        // Update results
+                        $('#results').removeClass('hidden');
+                        $('#inputSource').text(response.input_source);
+                        
+                        // Update food list
+                        var foodListHtml = '';
+                        response.food_data.forEach(function(food) {
+                            if (food.sugar_content !== null) {
+                                foodListHtml += `<div class="text-gray-700">
+                                    ${food.name}: ${food.sugar_content}g sugar
+                                </div>`;
+                            } else {
+                                foodListHtml += `<div class="text-gray-700">
+                                    ${food.name}: ${food.error}
+                                </div>`;
+                            }
+                        });
+                        $('#foodList').html(foodListHtml);
+                        
+                        $('#totalSugar').text(response.total_sugar);
+                        $('#insulinLevel').text(response.insulin_level);
+                        
+                        // Update advice
+                        $('#advice')
+                            .removeClass()
+                            .addClass(response.advice.class + ' p-4 rounded-lg mt-4')
+                            .html(`
+                                <div class="font-semibold mb-2">${response.advice.level}</div>
+                                <div>${response.advice.message}</div>
+                            `);
+                    },
+                    error: function(xhr, status, error) {
+                        $('#loading').addClass('hidden');
+                        $('#error').removeClass('hidden')
+                            .text('An error occurred. Please try again.');
+                    }
+                });
+            });
+            
+            // Clear error when user starts typing or changes input
+            $('input, select').on('input change', function() {
+                $('#error').addClass('hidden');
+            });
+        });
+    </script>
+</body>
+</html> 

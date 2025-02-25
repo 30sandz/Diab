@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diabetes Food Advisor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1rem;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .form-checkbox {
+            border-radius: 0.25rem;
+            border: 1px solid #e2e8f0;
+        }
+        .form-checkbox:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    {% include "advisor/navbar.html" %}
+    
+    {% block content %}
+    {% endblock %}
+    
+    <footer class="bg-white mt-12 py-6">
+        <div class="container mx-auto px-4 text-center text-gray-600">
+            <p>&copy; {% now "Y" %} Diabetes Food Advisor. All rights reserved.</p>
+            <p class="mt-2 text-sm">
+                This application is for informational purposes only. 
+                Always consult with healthcare providers regarding dietary decisions.
+            </p>
+        </div>
+    </footer>
+</body>
+</html> 

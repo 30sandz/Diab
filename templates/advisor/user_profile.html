@@ -1,0 +1,208 @@
+{% extends "advisor/base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-center mb-8 text-blue-600">User Profile</h1>
+    
+    {% if messages %}
+    <div class="mb-8">
+        {% for message in messages %}
+        <div class="p-4 {% if message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-yellow-100 text-yellow-700{% endif %} rounded-lg">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <form method="post" action="{% url 'update_profile' %}" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Personal Information -->
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-900">Personal Information</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Age -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Age</label>
+                        {{ form.age }}
+                        {% if form.age.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.age.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Gender -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Gender</label>
+                        {{ form.gender }}
+                        {% if form.gender.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.gender.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Height -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Height (cm)</label>
+                        {{ form.height }}
+                        {% if form.height.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.height.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Weight -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Weight (kg)</label>
+                        {{ form.weight }}
+                        {% if form.weight.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.weight.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Location -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">Location</label>
+                        {{ form.location }}
+                        {% if form.location.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.location.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Medical Information -->
+            <div class="space-y-4 pt-6 border-t border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">Medical Information</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Diabetes Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Type of Diabetes</label>
+                        {{ form.diabetes_type }}
+                        {% if form.diabetes_type.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.diabetes_type.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Diagnosis Date -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Diagnosis Date</label>
+                        {{ form.diagnosis_date }}
+                        {% if form.diagnosis_date.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.diagnosis_date.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Last HbA1c -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Last HbA1c Reading (%)</label>
+                        {{ form.last_hba1c }}
+                        {% if form.last_hba1c.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.last_hba1c.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-xs text-gray-500">Normal range: 4.0% to 5.6%</p>
+                    </div>
+                    
+                    <!-- Default Insulin Level -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Default Insulin Level</label>
+                        {{ form.default_insulin_level }}
+                        {% if form.default_insulin_level.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.default_insulin_level.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Other Medical Conditions -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700">Other Medical Conditions</label>
+                        {{ form.other_conditions }}
+                        {% if form.other_conditions.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.other_conditions.errors.0 }}</p>
+                        {% endif %}
+                        <p class="mt-1 text-sm text-gray-500">List any other medical conditions that may affect your diet</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- BMI Information -->
+            <div class="space-y-4 pt-6 border-t border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">BMI Information</h2>
+                <div id="bmi-result" class="p-4 bg-gray-50 rounded-lg">
+                    <p class="text-lg font-medium">Your BMI: <span id="bmi-value">--</span></p>
+                    <p class="text-sm text-gray-600" id="bmi-category"></p>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="pt-6 border-t border-gray-200">
+                <button type="submit" class="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition duration-200">
+                    Save Profile
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Next Steps -->
+    <div class="mt-8 text-center">
+        <p class="text-gray-600">
+            Next, set up your 
+            <a href="{% url 'user_preferences' %}" class="text-blue-600 hover:text-blue-800">dietary preferences</a>
+            to get personalized recipe suggestions.
+        </p>
+    </div>
+</div>
+
+<script>
+    function calculateBMI() {
+        const heightInput = document.querySelector('input[name="height"]');
+        const weightInput = document.querySelector('input[name="weight"]');
+        
+        if (heightInput && weightInput) {
+            const height = parseFloat(heightInput.value) / 100; // convert cm to meters
+            const weight = parseFloat(weightInput.value);
+            
+            if (height > 0 && weight > 0) {
+                const bmi = weight / (height * height);
+                const bmiValue = document.getElementById('bmi-value');
+                const bmiCategory = document.getElementById('bmi-category');
+                
+                bmiValue.textContent = bmi.toFixed(1);
+                
+                // Determine BMI category
+                let category;
+                let categoryClass;
+                if (bmi < 18.5) {
+                    category = 'Underweight';
+                    categoryClass = 'text-yellow-700';
+                } else if (bmi < 25) {
+                    category = 'Normal weight';
+                    categoryClass = 'text-green-700';
+                } else if (bmi < 30) {
+                    category = 'Overweight';
+                    categoryClass = 'text-yellow-700';
+                } else {
+                    category = 'Obese';
+                    categoryClass = 'text-red-700';
+                }
+                
+                bmiCategory.textContent = `Category: ${category}`;
+                bmiCategory.className = `text-sm ${categoryClass}`;
+            }
+        }
+    }
+    
+    // Calculate BMI when height or weight changes
+    document.addEventListener('DOMContentLoaded', function() {
+        const heightInput = document.querySelector('input[name="height"]');
+        const weightInput = document.querySelector('input[name="weight"]');
+        
+        if (heightInput && weightInput) {
+            heightInput.addEventListener('input', calculateBMI);
+            weightInput.addEventListener('input', calculateBMI);
+            
+            // Calculate initial BMI if values are present
+            calculateBMI();
+        }
+    });
+</script>
+{% endblock %} 

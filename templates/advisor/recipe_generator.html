@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe Generator - Diabetes Food Advisor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8 text-blue-600">Recipe Generator</h1>
+        
+        <!-- Navigation -->
+        <div class="mb-8 text-center">
+            <a href="{% url 'analyze_food' %}" class="text-blue-600 hover:text-blue-800">
+                ← Back to Food Advisor
+            </a>
+        </div>
+
+        <!-- Image Upload Form -->
+        <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 mb-8">
+            <form id="imageUploadForm" class="space-y-6" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Upload Image of Ingredients
+                    </label>
+                    <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
+                        <div class="space-y-1 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="flex text-sm text-gray-600">
+                                <label for="image-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                    <span>Upload a file</span>
+                                    <input id="image-upload" name="image" type="file" class="sr-only" accept="image/*">
+                                </label>
+                            </div>
+                            <p class="text-xs text-gray-500">
+                                PNG, JPG up to 10MB
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition duration-200">
+                    Detect Ingredients
+                </button>
+            </form>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="hidden max-w-2xl mx-auto text-center mb-8">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p class="mt-4 text-gray-600">Analyzing ingredients...</p>
+        </div>
+
+        <!-- Detected Ingredients Section -->
+        <div id="ingredientsSection" class="hidden max-w-2xl mx-auto bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">Detected Ingredients</h2>
+            <div class="mb-4">
+                <div id="ingredientsList" class="space-y-2">
+                    <!-- Ingredients will be added here -->
+                </div>
+            </div>
+            <div class="mt-4">
+                <input type="text" id="newIngredient" placeholder="Add new ingredient" 
+                    class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 mb-2">
+                <div class="flex justify-between">
+                    <button id="addIngredient" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-200">
+                        Add Ingredient
+                    </button>
+                    <button id="generateRecipes" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-200">
+                        Generate Recipes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recipes Section -->
+        <div id="recipesSection" class="hidden max-w-2xl mx-auto">
+            <!-- Complete Recipes -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-4">
+                <h2 class="text-xl font-semibold mb-4">Recipes Using All Ingredients</h2>
+                <div id="completeRecipes" class="space-y-2">
+                    <!-- Complete recipes will be added here -->
+                </div>
+            </div>
+
+            <!-- Partial Recipes -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold mb-4">Recipes Using Some Ingredients</h2>
+                <div id="partialRecipes" class="space-y-2">
+                    <!-- Partial recipes will be added here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <div id="error" class="hidden max-w-2xl mx-auto bg-red-100 text-red-700 p-4 rounded-lg mt-4"></div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            let detectedIngredients = new Set();
+            let ingredientConfidences = {};
+
+            // Show filename when a file is selected
+            $('#image-upload').change(function(e) {
+                const fileName = e.target.files[0]?.name || 'No file chosen';
+                $(this).parent().find('span').text(fileName);
+            });
+
+            // Handle image upload and ingredient detection
+            $('#imageUploadForm').on('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                $('#loading').removeClass('hidden');
+                $('#error').addClass('hidden');
+                $('#ingredientsSection').addClass('hidden');
+                $('#recipesSection').addClass('hidden');
+
+                $.ajax({
+                    url: '{% url "recipe_generator" %}',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        $('#loading').addClass('hidden');
+                        
+                        if (response.error) {
+                            $('#error').removeClass('hidden').text(response.error);
+                            return;
+                        }
+
+                        // Update ingredients list and confidences
+                        detectedIngredients = new Set(response.ingredients);
+                        ingredientConfidences = response.confidences;
+                        updateIngredientsList();
+                        $('#ingredientsSection').removeClass('hidden');
+                    },
+                    error: function() {
+                        $('#loading').addClass('hidden');
+                        $('#error').removeClass('hidden')
+                            .text('An error occurred. Please try again.');
+                    }
+                });
+            });
+
+            // Add new ingredient
+            $('#addIngredient').click(function() {
+                const newIngredient = $('#newIngredient').val().trim();
+                if (newIngredient) {
+                    detectedIngredients.add(newIngredient);
+                    ingredientConfidences[newIngredient] = 100; // Manual entries get 100% confidence
+                    updateIngredientsList();
+                    $('#newIngredient').val('');
+                }
+            });
+
+            // Generate recipes
+            $('#generateRecipes').click(function() {
+                if (detectedIngredients.size === 0) {
+                    $('#error').removeClass('hidden')
+                        .text('Please add at least one ingredient.');
+                    return;
+                }
+
+                $('#loading').removeClass('hidden');
+                $('#error').addClass('hidden');
+                $('#recipesSection').addClass('hidden');
+
+                $.ajax({
+                    url: '{% url "recipe_generator" %}',
+                    type: 'POST',
+                    data: {
+                        'action': 'generate_recipes',
+                        'ingredients': JSON.stringify([...detectedIngredients]),
+                        'csrfmiddlewaretoken': $('input[name=csrfmiddlewaretoken]').val()
+                    },
+                    success: function(response) {
+                        $('#loading').addClass('hidden');
+                        
+                        if (response.error) {
+                            $('#error').removeClass('hidden').text(response.error);
+                            return;
+                        }
+
+                        // Update recipes sections
+                        if (response.complete_recipes.length === 0 && response.partial_recipes.length === 0) {
+                            $('#error').removeClass('hidden')
+                                .text('No recipes could be generated with these ingredients. Please try different ingredients.');
+                            $('#recipesSection').addClass('hidden');
+                            return;
+                        }
+
+                        // Complete Recipes
+                        if (response.complete_recipes.length > 0) {
+                            $('#completeRecipes').html(
+                                response.complete_recipes.map(recipe => 
+                                    `<div class="p-4 bg-gray-50 rounded-lg">
+                                        <div class="whitespace-pre-line space-y-2">
+                                            <div class="font-bold text-lg">${recipe.split('\n')[0]}</div>
+                                            <div class="text-sm font-medium text-blue-600">
+                                                ${recipe.split('\n')[1]}
+                                            </div>
+                                            <div class="text-gray-600 mt-2">
+                                                ${recipe.split('\n').slice(2).join('\n')}
+                                            </div>
+                                        </div>
+                                    </div>`
+                                ).join('')
+                            );
+                            $('#completeRecipes').parent().removeClass('hidden');
+                        } else {
+                            $('#completeRecipes').parent().addClass('hidden');
+                        }
+
+                        // Partial Recipes
+                        if (response.partial_recipes.length > 0) {
+                            $('#partialRecipes').html(
+                                response.partial_recipes.map(recipe => 
+                                    `<div class="p-4 bg-gray-50 rounded-lg">
+                                        <div class="whitespace-pre-line space-y-2">
+                                            <div class="font-bold text-lg">${recipe.split('\n')[0]}</div>
+                                            <div class="text-sm font-medium text-blue-600">
+                                                ${recipe.split('\n')[1]}
+                                            </div>
+                                            <div class="text-gray-600 mt-2">
+                                                ${recipe.split('\n').slice(2).join('\n')}
+                                            </div>
+                                        </div>
+                                    </div>`
+                                ).join('')
+                            );
+                            $('#partialRecipes').parent().removeClass('hidden');
+                        } else {
+                            $('#partialRecipes').parent().addClass('hidden');
+                        }
+
+                        $('#recipesSection').removeClass('hidden');
+                    },
+                    error: function() {
+                        $('#loading').addClass('hidden');
+                        $('#error').removeClass('hidden')
+                            .text('An error occurred. Please try again.');
+                    }
+                });
+            });
+
+            function updateIngredientsList() {
+                const list = $('#ingredientsList');
+                list.empty();
+                
+                [...detectedIngredients].forEach(ingredient => {
+                    const confidence = ingredientConfidences[ingredient];
+                    let confidenceClass;
+                    if (confidence >= 80) {
+                        confidenceClass = 'bg-green-100 text-green-800';
+                    } else if (confidence >= 60) {
+                        confidenceClass = 'bg-blue-100 text-blue-800';
+                    } else if (confidence >= 40) {
+                        confidenceClass = 'bg-yellow-100 text-yellow-800';
+                    } else {
+                        confidenceClass = 'bg-red-100 text-red-800';
+                    }
+                    
+                    list.append(`
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div class="flex-1">
+                                <span class="font-medium">${ingredient}</span>
+                                ${confidence < 100 ? `
+                                    <span class="ml-2 px-2 py-1 text-sm rounded ${confidenceClass}">
+                                        ${confidence}% confident
+                                    </span>
+                                ` : ''}
+                            </div>
+                            <button class="ml-4 text-red-600 hover:text-red-800" 
+                                onclick="removeIngredient('${ingredient}')">
+                                ×
+                            </button>
+                        </div>
+                    `);
+                });
+            }
+
+            // Add to global scope for onclick handler
+            window.removeIngredient = function(ingredient) {
+                detectedIngredients.delete(ingredient);
+                delete ingredientConfidences[ingredient];
+                updateIngredientsList();
+            };
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,145 @@
+{% extends "advisor/base.html" %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-center mb-8 text-blue-600">Dietary Preferences</h1>
+    
+    {% if messages %}
+    <div class="mb-8">
+        {% for message in messages %}
+        <div class="p-4 {% if message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-yellow-100 text-yellow-700{% endif %} rounded-lg">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <form method="post" action="{% url 'update_preferences' %}" class="space-y-6">
+            {% csrf_token %}
+            
+            <!-- Dietary Restrictions -->
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-900">Dietary Restrictions</h2>
+                
+                <div class="grid grid-cols-1 gap-4">
+                    <!-- Diet Type -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Diet Type</label>
+                        {{ form.dietary_restriction }}
+                        {% if form.dietary_restriction.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.dietary_restriction.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Food Allergies -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Food Allergies</label>
+                        {{ form.food_allergies }}
+                        {% if form.food_allergies.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.food_allergies.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Cultural Restrictions -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Cultural Dietary Restrictions</label>
+                        {{ form.cultural_restrictions }}
+                        {% if form.cultural_restrictions.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.cultural_restrictions.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cuisine Preferences -->
+            <div class="space-y-4 pt-6">
+                <h2 class="text-xl font-semibold text-gray-900">Cuisine Preferences</h2>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {% for value, label in form.preferred_cuisines.field.choices %}
+                    <div class="flex items-center">
+                        <input type="checkbox" name="preferred_cuisines" value="{{ value }}" 
+                               class="form-checkbox h-4 w-4 text-blue-600"
+                               {% if value in form.preferred_cuisines.value %}checked{% endif %}>
+                        <label class="ml-2 text-sm text-gray-700">{{ label }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Cooking Preferences -->
+            <div class="space-y-4 pt-6">
+                <h2 class="text-xl font-semibold text-gray-900">Cooking Preferences</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Cooking Skill -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Cooking Skill Level</label>
+                        {{ form.cooking_skill }}
+                        {% if form.cooking_skill.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.cooking_skill.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Maximum Cooking Time -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Maximum Cooking Time (minutes)</label>
+                        {{ form.max_cooking_time }}
+                        {% if form.max_cooking_time.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.max_cooking_time.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Serving Size -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Preferred Serving Size</label>
+                        {{ form.serving_size }}
+                        {% if form.serving_size.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.serving_size.errors.0 }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notification Preferences -->
+            <div class="space-y-4 pt-6">
+                <h2 class="text-xl font-semibold text-gray-900">Notification Preferences</h2>
+                
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        {{ form.meal_reminders }}
+                        <label class="ml-2 text-sm text-gray-700">Meal time reminders</label>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        {{ form.sugar_check_reminders }}
+                        <label class="ml-2 text-sm text-gray-700">Blood sugar check reminders</label>
+                    </div>
+                    
+                    <div class="flex items-center">
+                        {{ form.recipe_suggestions }}
+                        <label class="ml-2 text-sm text-gray-700">Recipe suggestions</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Button -->
+            <div class="pt-6">
+                <button type="submit" class="w-full bg-blue-500 text-white py-3 px-4 rounded-lg hover:bg-blue-600 transition duration-200">
+                    Save Preferences
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Next Steps -->
+    <div class="mt-8 text-center">
+        <p class="text-gray-600">
+            Ready to start? Try the 
+            <a href="{% url 'recipe_generator' %}" class="text-blue-600 hover:text-blue-800">Recipe Generator</a>
+            to get personalized recipe suggestions.
+        </p>
+    </div>
+</div>
+{% endblock %} 
