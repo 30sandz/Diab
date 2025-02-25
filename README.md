@@ -1,4 +1,4 @@
-git clone https://github.com/yourusername/diabetes-advisor.git
+git clone https://github.com/30sandz/Diab.git
 
 Create a .env file in the root directory and add the following:
 USDA_API_KEY= your usda api key 
